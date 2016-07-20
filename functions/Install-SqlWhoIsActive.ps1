@@ -70,13 +70,6 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	BEGIN
 	{
 		
-		# please continue to use these variable names for consistency
-		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential
-		$source = $sourceserver.DomainInstanceName
-		
-		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
-		$Database = $psboundparameters.Database
-		
 		Function Get-SpWhoIsActive
 		{
 			
@@ -110,6 +103,12 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	
 	PROCESS
 	{
+		# please continue to use these variable names for consistency
+		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential
+		$source = $sourceserver.DomainInstanceName
+		
+		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
+		$Database = $psboundparameters.Database
 		
 		if ($database.length -eq 0)
 		{
@@ -162,11 +161,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 				throw "Can't install stored procedure. See exception text for details."
 			}
 		}
-	}
-	
-	END
-	{
-		$sourceserver.ConnectionContext.Disconnect()
+		
 		
 		if ($OutputDatabaseName -eq $true)
 		{
@@ -174,7 +169,13 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		}
 		else
 		{
-			Write-Output "Finished installing/updating sp_WhoIsActive in $database on $SqlServer "	
+			Write-Output "Finished installing/updating sp_WhoIsActive in $database on $SqlServer "
 		}
+	}
+	
+	END
+	{
+		$sourceserver.ConnectionContext.Disconnect()
+
 	}
 }
