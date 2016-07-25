@@ -11,7 +11,7 @@
 	RootModule = 'dbatools.psm1'
 	
 	# Version number of this module.
-	ModuleVersion = '0.8.4.4'
+	ModuleVersion = '0.8.4.5'
 	
 	# ID used to uniquely identify this module
 	GUID = '9d139310-ce45-41ce-8e8b-d76335aa1789'
@@ -125,7 +125,11 @@
 		'Remove-SqlOrphanUser',
 		'Find-SqlUnusedIndex',
 		'Install-SqlWhoIsActive',
-		'Update-SqlWhoIsActive'
+		'Update-SqlWhoIsActive',
+		'Install-OlaDatabaseBackup',
+		'Install-OlaIndexOptimize',
+		'Install-OlaDatabaseIntegrityCheck',
+		'Install-SqlMaintenanceSolution'
 	)
 	
 	# Cmdlets to export from this module
@@ -135,7 +139,13 @@
 	VariablesToExport = '*'
 	
 	# Aliases to export from this module
-	AliasesToExport = 'Reset-SqlSaPassword','Copy-SqlUserDefinedMessage','Copy-SqlJobServer','Restore-HallengrenBackup', 'Update-SqlWhoIsActive', 'Show-SqlMigrationConstraint'
+	AliasesToExport = 'Reset-SqlSaPassword',
+	'Copy-SqlUserDefinedMessage',
+	'Copy-SqlJobServer',
+	'Restore-HallengrenBackup',
+	'Update-SqlWhoIsActive',
+	'Show-SqlMigrationConstraint',
+	'Install-OlaMaintenanceSolution'
 	
 	# List of all modules packaged with this module
 	ModuleList = @()

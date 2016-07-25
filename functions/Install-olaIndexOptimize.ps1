@@ -35,29 +35,35 @@ Install-SqlWhoIsActive -SqlServer sqlserver2014a -SqlCredential $cred
 
 Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
 
-	CreateJobs
-	BackupDirectory (do a check)
-	CleanupTime
-	OutputFileDirectory
-	LogToTable
-	Database
-	JobNameSystemFull = 'DatabaseBackup - SYSTEM_DATABASES - FULL',
-	JobNameUserDiff = 'DatabaseBackup - USER_DATABASES - DIFF',
-	JobNameUserFull = 'DatabaseBackup - USER_DATABASES - FULL',
-	JobNameUserLog =  'DatabaseBackup - USER_DATABASES - LOG',
-	JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES'
-	JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES'
-	JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES'
-	JobNameDeleteBackupHistory = 'sp_delete_backuphistory'
-	JobNamePurgeBackupHistory = 'sp_purge_jobhistory'
-	JobNameOutputFileCleanup = 'Output File Cleanup'
-	JobNameComandLogCleanup =  'CommandLog Cleanup'
+[string]$Databases,
+[string]$FragmentationLow,
+[string]$FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
+[string]$FragmentationHigh = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
+[int]$FragmentationLevel1  = 5,
+[int]$FragmentationLevel2  = 30,
+[int]$PageCountLevel = 1000,
+[switch]$SortInTempdb,
+[string]$MaxDOP int,
+[string]$FillFactor int,
+[string]$PadIndex,
+[switch]$NoLOBCompaction,
+[string]$UpdateStatistics,
+[switch]$OnlyModifiedStatistics,
+[string]$StatisticsSample int,
+[switch]$StatisticsResample,
+[string]$NoPartitionLevel,
+[switch]$MSShippedObjects,
+[string]$Indexes,
+[int]$TimeLimit,
+[int]$Delay,
+[int]$WaitAtLowPriorityMaxDuration,
+[string]$WaitAtLowPriorityAbortAfterWait,
+[int]$LockTimeout ,
+[switch]$LogToTable,
+[switch]$OutputOnly
 	
-	FragmentationLevel1 = 30%
-FragmentationLevel2 = 50%
-FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
-FragmentationHigh = 'INDEX_REBUILD_ONLINE'
-	
+	#$NoLOBCompaction.
+	$NoPartitionLevel
 #>
 	
 	[CmdletBinding()]
