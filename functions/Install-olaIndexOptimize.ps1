@@ -1,4 +1,4 @@
-﻿Function Install-olaIndexOptimize
+﻿Function Install-OlaIndexOptimize
 {
 <#
 .SYNOPSIS
@@ -21,23 +21,6 @@ Windows Authentication will be used if SqlCredential is not specified. SQL Serve
 
 .PARAMETER OutputDatabaseName
 Outputs just the database name instead of the success message
-
-.NOTES 
-dbatools PowerShell module (https://dbatools.io, clemaire@gmail.com)
-Copyright (C) 2016 Chrissy LeMaire
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .LINK
 https://dbatools.io/Install-SqlWhoIsActive
@@ -86,50 +69,15 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		[string]$Path,
 		[switch]$OutputDatabaseName,
 		[switch]$Force,
-		
-		<#
-		@Databases nvarchar(max),
-							@Directory nvarchar(max) = NULL,
-							@BackupType nvarchar(max),
-							@Verify nvarchar(max) = 'N',
-							@CleanupTime int = NULL,
-							@CleanupMode nvarchar(max) = 'AFTER_BACKUP',
-							@Compress nvarchar(max) = NULL,
-							@CopyOnly nvarchar(max) = 'N',
-							@ChangeBackupType nvarchar(max) = 'N',
-							@BackupSoftware nvarchar(max) = NULL,
-							@CheckSum nvarchar(max) = 'N',
-							@BlockSize int = NULL,
-							@BufferCount int = NULL,
-							@MaxTransferSize int = NULL,
-							@NumberOfFiles int = NULL,
-							@CompressionLevel int = NULL,
-							@Description nvarchar(max) = NULL,
-							@Threads int = NULL,
-							@Throttle int = NULL,
-							@Encrypt nvarchar(max) = 'N',
-							@EncryptionAlgorithm nvarchar(max) = NULL,
-							@ServerCertificate nvarchar(max) = NULL,
-							@ServerAsymmetricKey nvarchar(max) = NULL,
-							@EncryptionKey nvarchar(max) = NULL,
-							@ReadWriteFileGroups nvarchar(max) = 'N',
-							@OverrideBackupPreference nvarchar(max) = 'N',
-							@NoRecovery nvarchar(max) = 'N',
-							@URL nvarchar(max) = NULL,
-							@Credential nvarchar(max) = NULL,
-							@MirrorDirectory nvarchar(max) = NULL,
-							@MirrorCleanupTime int = NULL,
-							@MirrorCleanupMode nvarchar(max) = 'AFTER_BACKUP',
-							@LogToTable nvarchar(max) = 'N',
-							@Execute nvarchar(max) = 'Y'
-		#>
+		[string]$Databases
 	)
 	
-	DynamicParam { if ($sqlserver) { return Get-ParamSqlDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
+	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
 	
 	BEGIN
 	{
 		
+		# JOIN THE $CheckCommands WITH -JOIN ','
 		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
 		$source = $sourceserver.DomainInstanceName
 		

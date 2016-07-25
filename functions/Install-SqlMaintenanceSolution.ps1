@@ -1,14 +1,4 @@
-﻿DatabaseBackup: SQL Server Backup
-DatabaseIntegrityCheck: SQL Server Integrity Check
-IndexOptimize: SQL Server Index and Statistics Maintenance
-
-
-Install-SqlDatabaseBackup
-Install-SqlDatabaseIntegrityCheck
-Install-SqlIndexOptimize
-
-
-Function Install-SqlMaintenanceSolution
+﻿Function Install-SqlMaintenanceSolution
 {
 <#
 .SYNOPSIS
@@ -32,35 +22,6 @@ Windows Authentication will be used if SqlCredential is not specified. SQL Serve
 .PARAMETER OutputDatabaseName
 Outputs just the database name instead of the success message
 
-.NOTES 
-dbatools PowerShell module (https://dbatools.io, clemaire@gmail.com)
-Copyright (C) 2016 Chrissy LeMaire
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-.LINK
-https://dbatools.io/Install-SqlWhoIsActive
-
-.EXAMPLE
-Install-SqlWhoIsActive -SqlServer sqlserver2014a -Database master
-
-Installs sp_WhoIsActive to sqlserver2014a's master database. Logs in using Windows Authentication.
-	
-.EXAMPLE   
-Install-SqlWhoIsActive -SqlServer sqlserver2014a -SqlCredential $cred
-
-Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
 
 	CreateJobs
 	BackupDirectory (do a check)
@@ -68,22 +29,19 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	OutputFileDirectory
 	LogToTable
 	Database
-	JobNameSystemFull = 'DatabaseBackup - SYSTEM_DATABASES - FULL',
-	JobNameUserDiff = 'DatabaseBackup - USER_DATABASES - DIFF',
-	JobNameUserFull = 'DatabaseBackup - USER_DATABASES - FULL',
-	JobNameUserLog =  'DatabaseBackup - USER_DATABASES - LOG',
-	JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES'
-	JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES'
-	JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES'
-	JobNameDeleteBackupHistory = 'sp_delete_backuphistory'
-	JobNamePurgeBackupHistory = 'sp_purge_jobhistory'
-	JobNameOutputFileCleanup = 'Output File Cleanup'
-	JobNameComandLogCleanup =  'CommandLog Cleanup'
+	[string]$JobNameSystemFull = 'DatabaseBackup - SYSTEM_DATABASES - FULL',
+	[string]$JobNameUserDiff = 'DatabaseBackup - USER_DATABASES - DIFF',
+	[string]$JobNameUserFull = 'DatabaseBackup - USER_DATABASES - FULL',
+	[string]$JobNameUserLog =  'DatabaseBackup - USER_DATABASES - LOG',
+	[string]$JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES'
+	[string]$JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES'
+	[string]$JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES'
+	[string]$JobNameDeleteBackupHistory = 'sp_delete_backuphistory'
+	[string]$JobNamePurgeBackupHistory = 'sp_purge_jobhistory'
+	[string]$JobNameOutputFileCleanup = 'Output File Cleanup'
+	[string]$JobNameComandLogCleanup =  'CommandLog Cleanup'
 	
-	FragmentationLevel1 = 30%
-FragmentationLevel2 = 50%
-FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
-FragmentationHigh = 'INDEX_REBUILD_ONLINE'
+
 	
 #>
 	
@@ -93,13 +51,9 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		[Alias("ServerInstance", "SqlInstance")]
 		[object]$SqlServer,
 		[object]$SqlCredential,
-		[string]$Path,
-		[switch]$OutputDatabaseName,
-		[string]$Header = "sp_WhoIsActive not found. To deploy, select a database or hit cancel to quit.",
-		[switch]$Force
-	)
+		[string]$Path
 	
-	DynamicParam { if ($sqlserver) { return Get-ParamSqlDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
+	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
 	
 	BEGIN
 	{

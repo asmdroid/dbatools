@@ -1,76 +1,15 @@
-﻿Function Install-olaDatabaseIntegrityCheck
+﻿Function Install-OlaIntegrityCheck
 {
 <#
-.SYNOPSIS
-Automatically installs or updates Ola Hallengren's Maintenance Solution. Wrapper for Install-SqlDatabaseBackup, Install-SqlDatabaseIntegrityCheck and Install-SqlIndexOptimize.
 
-.DESCRIPTION
-This command downloads and installs Maintenance Solution, with Ola's permission.
-	
-To read more about Maintenance Solution, please visit https://ola.hallengren.com
-	
-.PARAMETER SqlServer
-The SQL Server instance.You must have sysadmin access and server version must be SQL Server version 2000 or higher.
-
-.PARAMETER SqlCredential
-Allows you to login to servers using SQL Logins as opposed to Windows Auth/Integrated/Trusted. To use:
-
-$scred = Get-Credential, then pass $scred object to the -SqlCredential parameter. 
-
-Windows Authentication will be used if SqlCredential is not specified. SQL Server does not accept Windows credentials being passed as credentials. To connect as a different Windows user, run PowerShell as that user.
-
-.PARAMETER OutputDatabaseName
-Outputs just the database name instead of the success message
-
-.NOTES 
-dbatools PowerShell module (https://dbatools.io, clemaire@gmail.com)
-Copyright (C) 2016 Chrissy LeMaire
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-.LINK
-https://dbatools.io/Install-SqlWhoIsActive
-
-.EXAMPLE
-Install-SqlWhoIsActive -SqlServer sqlserver2014a -Database master
-
-Installs sp_WhoIsActive to sqlserver2014a's master database. Logs in using Windows Authentication.
-	
-.EXAMPLE   
-Install-SqlWhoIsActive -SqlServer sqlserver2014a -SqlCredential $cred
+	FragmentationLevel1 = 30%
+FragmentationLevel2 = 50%
+FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
+FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 
 Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
 
-	CreateJobs
-	BackupDirectory (do a check)
-	CleanupTime
-	OutputFileDirectory
-	LogToTable
-	Database
-	JobNameSystemFull = 'DatabaseBackup - SYSTEM_DATABASES - FULL',
-	JobNameUserDiff = 'DatabaseBackup - USER_DATABASES - DIFF',
-	JobNameUserFull = 'DatabaseBackup - USER_DATABASES - FULL',
-	JobNameUserLog =  'DatabaseBackup - USER_DATABASES - LOG',
-	JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES'
-	JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES'
-	JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES'
-	JobNameDeleteBackupHistory = 'sp_delete_backuphistory'
-	JobNamePurgeBackupHistory = 'sp_purge_jobhistory'
-	JobNameOutputFileCleanup = 'Output File Cleanup'
-	JobNameComandLogCleanup =  'CommandLog Cleanup'
-	
-	FragmentationLevel1 = 30%
+FragmentationLevel1 = 30%
 FragmentationLevel2 = 50%
 FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
 FragmentationHigh = 'INDEX_REBUILD_ONLINE'
@@ -84,12 +23,20 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		[object]$SqlServer,
 		[object]$SqlCredential,
 		[string]$Path,
-		[switch]$OutputDatabaseName,
-		[string]$Header = "sp_WhoIsActive not found. To deploy, select a database or hit cancel to quit.",
-		[switch]$Force
+		[ValidateSet('CHECKDB', 'CHECKFILEGROUP', 'CHECKTABLE', 'CHECKALLOC', 'CHECKCATALOG', 'CHECKALLOC', 'CHECKCATALOG')]
+		[string[]]$CheckCommands,
+		[switch]$PhysicalOnly,
+		[switch]$NoIndex,
+		[switch]$ExtendedLogicalChecks,
+		[switch]$TabLock,
+		[string]$FileGroups,
+		[string]$Objects,
+		[int]$LockTimeout,
+		[switch]$LogToTable,
+		[switch]$OutputOnly
 	)
 	
-	DynamicParam { if ($sqlserver) { return Get-ParamSqlDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
+	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
 	
 	BEGIN
 	{
@@ -97,7 +44,7 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
 		$source = $sourceserver.DomainInstanceName
 		
-		Function Get-olaMaintenanceSolution
+		Function Get-OlaMaintenanceSolution
 		{
 			
 			$url = 'https://ola.hallengren.com/scripts/MaintenanceSolution.sql'

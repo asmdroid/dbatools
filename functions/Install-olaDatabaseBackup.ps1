@@ -40,15 +40,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .LINK
-https://dbatools.io/Install-SqlWhoIsActive
+https://dbatools.io/Install-olaDatabaseBackup
 
 .EXAMPLE
-Install-SqlWhoIsActive -SqlServer sqlserver2014a -Database master
+Install-olaDatabaseBackup -SqlServer sqlserver2014a -Database master
 
-Installs sp_WhoIsActive to sqlserver2014a's master database. Logs in using Windows Authentication.
+Installs Maintenance Plans to sqlserver2014a's master database. Logs in using Windows Authentication.
 	
 .EXAMPLE   
-Install-SqlWhoIsActive -SqlServer sqlserver2014a -SqlCredential $cred
+Install-olaDatabaseBackup -SqlServer sqlserver2014a -SqlCredential $cred
 
 Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
 
@@ -71,25 +71,108 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	JobNameComandLogCleanup =  'CommandLog Cleanup'
 	
 	FragmentationLevel1 = 30%
-FragmentationLevel2 = 50%
-FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
-FragmentationHigh = 'INDEX_REBUILD_ONLINE'
+	FragmentationLevel2 = 50%
+	FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
+	FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 	
 #>
 	
 	[CmdletBinding()]
 	Param (
-		[parameter(Mandatory = $true, ValueFromPipeline = $true)]
+		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Alias("ServerInstance", "SqlInstance")]
 		[object]$SqlServer,
 		[object]$SqlCredential,
-		[string]$Path,
-		[switch]$OutputDatabaseName,
-		[string]$Header = "sp_WhoIsActive not found. To deploy, select a database or hit cancel to quit.",
-		[switch]$Force
+		[string]$Databases,
+		[string]$Directory,
+		[ValidateSet('FULL', 'DIFF', 'LOG')]
+		[string]$BackupType,
+		[switch]$Verify,
+		[Parameter(Mandatory = $true, HelpMessage = "Specify cleanup time in hours. Infinite = 0, 7d = 168, 30d = 720, 60d = 1440, 90d = 2160, 365d = 8760")]
+		[int]$CleanupTime,
+		[int]$CleanupTimeDays,
+		[ValidateSet('AfterBackup', 'BeforeBackup')]
+		[string]$CleanupMode = 'AfterBackup',
+		[ValidateSet('Default', 'Yes', 'No')]
+		[string]$Compress,
+		[switch]$CopyOnly,
+		[switch]$ChangeBackupType,
+		[ValidateSet('Native', 'Litespeed', 'SQLBackup', 'SQLSafe')]
+		[string]$BackupSoftware = 'Native',
+		[switch]$CheckSum,
+		[int]$BlockSize,
+		[int]$BufferCount,
+		[int]$MaxTransferSize,
+		[ValidateLength(0, 64)]
+		[int]$NumberOfFiles,
+		[ValidateScript({
+				switch ($BackupSoftware)
+				{
+					'Default' { return $false }
+					'Litespeed' { $_ -in 0..8 }
+					'SQLBackup' { $_ -in 0..4 }
+					'SQLSafe' { $_ -in 1..4 }
+				}
+			})]
+		[int]$CompressionLevel,
+		[string]$Description,
+		[ValidateScript({
+				switch ($BackupSoftware)
+				{
+					'Default' { return $false }
+					{ 'Litespeed' -or 'SQLBackup' -or 'SQLSafe' } { $_ -in 1..32 }
+				}
+			})]
+		[int]$Threads,
+		[ValidateScript({
+				switch ($BackupSoftware)
+				{
+					'Litespeed' { return $true }
+					Default { return $false }
+				}
+			})]
+		[int]$ThrottlePercent,
+		[switch]$Encrypt,
+		[ValidateSet('RC2_40', 'RC2_56', 'RC2_112', 'RC2_128', 'TRIPLE_DES_3KEY', 'RC4_128', 'AES_128', 'AES_192', 'AES_256')]
+		[string]$EncryptionAlgorithm,
+		# This needs to be a dynamic param
+
+		[string]$ServerCertificate,
+		# This needs to be a dynamic param
+
+		[string]$ServerAsymmetricKey,
+		# This needs to be a dynamic param
+
+		[string]$EncryptionKey,
+		[switch]$ReadWriteFileGroups,
+		[switch]$OverrideBackupPreference,
+		[switch]$NoRecovery,
+		[string]$URL,
+		# This needs to be a dynamic param
+
+		[string]$Credential,
+		# validate
+
+		[string]$MirrorDirectory,
+		[int]$MirrorCleanupTime,
+		[ValidateSet('AfterBackup', 'BeforeBackup')]
+		[string]$MirrorCleanupMode = 'AfterBackup',
+		[switch]$LogToTable,
+		[switch]$OutputOnly
+		
+		# NULL	SQL Server native backup (the default)
+		# LITESPEED	LiteSpeed for SQL Server
+		# SQLBACKUP	Red Gate SQL Backup Pro
+		# SQLSAFE	Idera SQL Safe Backup
+		
+		# Set the LiteSpeed for SQL Server, Red Gate SQL Backup Pro, or Idera SQL Safe Backup compression level.
+		# In LiteSpeed for SQL Server, the compression levels 0 to 8 are supported. In Red Gate SQL Backup Pro, levels 0 to 4 are supported, and in Idera SQL Safe Backup, levels 1 to 4 are supported.
+		# Specify the time, in hours, after which the backup files are deleted. If no time is specified, then no backup files are deleted.
+		# DatabaseBackup has a check to verify that transaction log backups that are newer than the most recent full or differential backup are not deleted.
+		
 	)
 	
-	DynamicParam { if ($sqlserver) { return Get-ParamSqlDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
+	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
 	
 	BEGIN
 	{
@@ -154,10 +237,11 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 	
 	PROCESS
 	{
-		
+		Write-Warning "hello"
+		return
 		if ($database.length -eq 0)
 		{
-			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle sp_WhoisActive" -Header $header -DefaultDb "master"
+			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle Maintenance Plans" -Header $header -DefaultDb "master"
 			
 			if ($database.length -eq 0)
 			{
@@ -180,12 +264,12 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 			{
 				try
 				{
-					Write-Output "Downloading sp_WhoIsActive zip file, unzipping and $actioning."
+					Write-Output "Downloading Maintenance Plans zip file, unzipping and $actioning."
 					Get-SpWhoIsActive
 				}
 				catch
 				{
-					throw "Couldn't download sp_WhoIsActive. Please download and $action manually from http://sqlblog.com/files/folders/42453/download.aspx."
+					throw "Couldn't download Maintenance Plans. Please download and $action manually from http://sqlblog.com/files/folders/42453/download.aspx."
 				}
 			}
 			
@@ -227,7 +311,7 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		}
 		else
 		{
-			Write-Output "Finished $actioning sp_WhoIsActive in $database on $SqlServer "
+			Write-Output "Finished $actioning Maintenance Plans in $database on $SqlServer "
 		}
 	}
 }
