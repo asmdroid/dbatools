@@ -37,7 +37,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 
 #>
 	
-	[CmdletBinding()]
+	[CmdletBinding(DefaultParameterSetName = "Default", SupportsShouldProcess = $true)]
 	Param (
 		[parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Alias("ServerInstance", "SqlInstance")]
@@ -45,14 +45,18 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		[object]$SqlCredential,
 		[string]$Path,
 		[string]$Databases,
-		[string]$FragmentationLow,
-		[string]$FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
-		[string]$FragmentationHigh = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
+		[ValidateSet('RebuildOnline', 'RebuildOffline', 'Reorganize')]
+		[string[]]$FragmentationLow,
+		[ValidateSet('RebuildOnline', 'RebuildOffline', 'Reorganize')]
+		[string[]]$FragmentationMedium = @('Reorganize','RebuildOnline','RebuildOffline'),
+		[ValidateSet('RebuildOnline', 'RebuildOffline', 'Reorganize')]
+		[string[]]$FragmentationHigh = @('RebuildOnline', 'RebuildOffline'),
 		[int]$FragmentationLevel1 = 5,
 		[int]$FragmentationLevel2 = 30,
 		[int]$PageCountLevel = 1000,
 		[switch]$SortInTempdb,
-		[int]$MaxDOP ,
+		[int]$MaxDOP,
+		[ValidateLength(0, 100)]
 		[int]$FillFactor,
 		[string]$PadIndex,
 		[switch]$NoLOBCompaction,
@@ -72,10 +76,39 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		[switch]$OutputOnly
 	)
 	
-	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
+	DynamicParam
+	{
+		if ($sqlserver)
+		{
+			return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential 
+		}
+	}
 	
 	BEGIN
 	{
+		
+		if ($FragmentationLow.Length -gt 0) {
+			$FragmentationLow = $FragmentationLow -join ','
+			$FragmentationLow = $FragmentationLow.Replace('RebuildOnline', 'INDEX_REBUILD_ONLINE')
+			$FragmentationLow = $FragmentationLow.Replace('RebuildOffline', 'INDEX_REBUILD_OFFLINE')
+			$FragmentationLow = $FragmentationLow.Replace('Reorganize', 'INDEX_REORGANIZE')
+		}
+		
+		if ($FragmentationMedium.Length -gt 0)
+		{
+			$FragmentationMedium = $FragmentationMedium -join ','
+			$FragmentationMedium = $FragmentationMedium.Replace('RebuildOnline', 'INDEX_REBUILD_ONLINE')
+			$FragmentationMedium = $FragmentationMedium.Replace('RebuildOffline', 'INDEX_REBUILD_OFFLINE')
+			$FragmentationMedium = $FragmentationMedium.Replace('Reorganize', 'INDEX_REORGANIZE')
+		}
+		
+		if ($FragmentationHigh.Length -gt 0)
+		{
+			$FragmentationHigh = $FragmentationHigh -join ','
+			$FragmentationHigh = $FragmentationHigh.Replace('RebuildOnline', 'INDEX_REBUILD_ONLINE')
+			$FragmentationHigh = $FragmentationHigh.Replace('RebuildOffline', 'INDEX_REBUILD_OFFLINE')
+			$FragmentationHigh = $FragmentationHigh.Replace('Reorganize', 'INDEX_REORGANIZE')
+		}
 		
 		switch ($OutputOnly)
 		{
@@ -165,8 +198,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	}
 	
 	PROCESS
-	{
-		
+	{ 
 		if ($database.length -eq 0)
 		{
 			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle sp_WhoisActive" -Header $header -DefaultDb "master"

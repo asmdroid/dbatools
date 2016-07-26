@@ -51,29 +51,6 @@ Installs Maintenance Plans to sqlserver2014a's master database. Logs in using Wi
 Install-olaDatabaseBackup -SqlServer sqlserver2014a -SqlCredential $cred
 
 Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
-
-	CreateJobs
-	BackupDirectory (do a check)
-	CleanupTime
-	OutputFileDirectory
-	LogToTable
-	Database
-	JobNameSystemFull = 'DatabaseBackup - SYSTEM_DATABASES - FULL',
-	JobNameUserDiff = 'DatabaseBackup - USER_DATABASES - DIFF',
-	JobNameUserFull = 'DatabaseBackup - USER_DATABASES - FULL',
-	JobNameUserLog =  'DatabaseBackup - USER_DATABASES - LOG',
-	JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES'
-	JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES'
-	JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES'
-	JobNameDeleteBackupHistory = 'sp_delete_backuphistory'
-	JobNamePurgeBackupHistory = 'sp_purge_jobhistory'
-	JobNameOutputFileCleanup = 'Output File Cleanup'
-	JobNameComandLogCleanup =  'CommandLog Cleanup'
-	
-	FragmentationLevel1 = 30%
-	FragmentationLevel2 = 50%
-	FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
-	FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 	
 #>
 	
@@ -134,19 +111,19 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 					Default { return $false }
 				}
 			})]
-		[Alias("Throttle")]
-		[int]$ThrottlePercent,
+		[Alias("ThrottlePercent")]
+		[int]$Throttle,
 		[switch]$Encrypt,
 		[ValidateSet('RC2_40', 'RC2_56', 'RC2_112', 'RC2_128', 'TRIPLE_DES_3KEY', 'RC4_128', 'AES_128', 'AES_192', 'AES_256')]
 		[string]$EncryptionAlgorithm,
-		[string]$ServerCertificate,
-		[string]$ServerAsymmetricKey,
+		#[string]$ServerCertificate,
+		#[string]$ServerAsymmetricKey,
 		[string]$EncryptionKey,
 		[switch]$ReadWriteFileGroups,
 		[switch]$OverrideBackupPreference,
 		[switch]$NoRecovery,
 		[string]$URL,
-		[string]$Credential,
+		#[string]$Credential,
 		[string]$MirrorDirectory,
 		[Parameter(Mandatory = $false, HelpMessage = "Specify cleanup time in hours. Infinite = 0, 7d = 168, 30d = 720, 60d = 1440, 90d = 2160, 365d = 8760")]
 		[int]$MirrorCleanupTime,
@@ -161,13 +138,15 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	{
 		if ($sqlserver)
 		{
-			$dbparams = Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential
-			$credparams = Get-ParamSqlCredentials -SqlServer $sqlserver -SqlCredential $SqlCredential
-			#$allparams = Get-ParamSqlDatabaseFileTypes -SqlServer $sqlserver -SqlCredential $SqlCredential
-			#$null = $allparams.Add("Databases", $dbparams.Databases)
-			#return $allparams
+			$paramserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
+			$allparams = Get-ParamInstallDatabase -SqlServer $paramserver
+			$credparams = Get-ParamSqlCredential -SqlServer $paramserver
+			$servercertparams = Get-ParamServerCertificate -SqlServer $paramserver
+			$null = $allparams.Add("Credential", $credparams.Credential)
+			$null = $allparams.Add("ServerCertificate", $servercertparams.ServerCertificate)
+			$null = $allparams.Add("ServerAsymmetricKey", $serverasymkeyparams.ServerAsymmetricKey)
+			return $allparams
 		}
-		
 	}
 	
 	BEGIN

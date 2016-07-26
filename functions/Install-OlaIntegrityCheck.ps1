@@ -2,21 +2,9 @@
 {
 <#
 
-	FragmentationLevel1 = 30%
-FragmentationLevel2 = 50%
-FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
-FragmentationHigh = 'INDEX_REBUILD_ONLINE'
-
-Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
-
-FragmentationLevel1 = 30%
-FragmentationLevel2 = 50%
-FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE'
-FragmentationHigh = 'INDEX_REBUILD_ONLINE'
-	
 #>
 	
-	[CmdletBinding()]
+	[CmdletBinding(DefaultParameterSetName = "Default", SupportsShouldProcess = $true)]
 	Param (
 		[parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Alias("ServerInstance", "SqlInstance")]
@@ -44,12 +32,20 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
 		$source = $sourceserver.DomainInstanceName
 		
+		$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
+		
+		switch ($OutputOnly)
+		{
+			$true { $Execute = $false }
+			$false { $Execute = $true }
+		}
+	
+		
 		Function Get-OlaMaintenanceSolution
 		{
 			
-			$url = 'https://ola.hallengren.com/scripts/MaintenanceSolution.sql'
-			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$sqlfile = "$temp\MaintenanceSolution.sql"
+			$url = 'https://ola.hallengren.com/scripts/IndexOptimize.sql'
+			$sqlfile = "$temp\IndexOptimize.sql"
 			
 			try
 			{
@@ -91,6 +87,8 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		{
 			$actioning = "updating"
 		}
+		
+		
 	}
 	
 	PROCESS
@@ -98,7 +96,7 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		
 		if ($database.length -eq 0)
 		{
-			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle sp_WhoisActive" -Header $header -DefaultDb "master"
+			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle MaintenancePlan" -Header $header -DefaultDb "master"
 			
 			if ($database.length -eq 0)
 			{
@@ -113,20 +111,19 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		
 		if ($Path.Length -eq 0)
 		{
-			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$file = Get-ChildItem "$temp\who*active*.sql" | Select -First 1
+			$sqlfile = "$temp\MaintenanceSolution.sql"
 			$path = $file.FullName
 			
 			if ($path.Length -eq 0 -or $force -eq $true)
 			{
 				try
 				{
-					Write-Output "Downloading sp_WhoIsActive zip file, unzipping and $actioning."
-					Get-SpWhoIsActive
+					Write-Output "Downloading MaintenancePlan zip file, unzipping and $actioning."
+					Get-OlaMaintenanceSolution
 				}
 				catch
 				{
-					throw "Couldn't download sp_WhoIsActive. Please download and $action manually from http://sqlblog.com/files/folders/42453/download.aspx."
+					throw "Couldn't download MaintenancePlan. Please download and $action manually from http://sqlblog.com/files/folders/42453/download.aspx."
 				}
 			}
 			
@@ -168,7 +165,7 @@ FragmentationHigh = 'INDEX_REBUILD_ONLINE'
 		}
 		else
 		{
-			Write-Output "Finished $actioning sp_WhoIsActive in $database on $SqlServer "
+			Write-Output "Finished $actioning MaintenancePlan in $database on $SqlServer "
 		}
 	}
 }

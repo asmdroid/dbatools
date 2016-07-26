@@ -318,51 +318,6 @@ Function Get-ParamSqlServerRoles
 	return $newparams
 }
 
-Function Get-ParamSqlCredentials
-{
-<# 
-.SYNOPSIS 
-Internal function. Returns System.Management.Automation.RuntimeDefinedParameterDictionary 
-filled with SQL Credentials from specified SQL Server server name.
-#>	
-	[CmdletBinding()]
-	param (
-		[Parameter(Mandatory = $true)]
-		[Alias("ServerInstance","SqlInstance")]
-		[object]$SqlServer,
-		[System.Management.Automation.PSCredential]$SqlCredential
-	)
-	
-	try { $server = Connect-SqlServer -SqlServer $SqlServer -SqlCredential $SqlCredential -ParameterConnection }
-	catch { return }
-	
-	# Populate arrays
-	$credentiallist = @()
-	foreach ($credential in $server.credentials)
-	{
-		$credentiallist += $credential.name
-	}
-	
-	# Reusable parameter setup
-	$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
-	$attributes = New-Object System.Management.Automation.ParameterAttribute
-	
-	$attributes.ParameterSetName = "__AllParameterSets"
-	$attributes.Mandatory = $false
-	$attributes.Position = 3
-	
-	# Database list parameter setup
-	if ($credentiallist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $credentiallist }
-	$lsattributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
-	$lsattributes.Add($attributes)
-	if ($credentiallist) { $lsattributes.Add($dbvalidationset) }
-	$Credentials = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("Credentials", [String[]], $lsattributes)
-	
-	$newparams.Add("Credentials", $Credentials)
-	$server.ConnectionContext.Disconnect()
-	
-	return $newparams
-}
 
 Function Get-ParamSqlServerAudits
 {
@@ -1630,3 +1585,235 @@ Function Get-ParamSqlDatabaseFileTypes
 	
 	return $newparams
 }
+
+Function Get-ParamInstallDatabase
+{
+<# 
+.SYNOPSIS 
+Internal function. Returns System.Management.Automation.RuntimeDefinedParameterDictionary 
+filled with database list from specified SQL Server server.
+
+#>	
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory = $true)]
+		[Alias("ServerInstance", "SqlInstance")]
+		[object]$SqlServer,
+		[System.Management.Automation.PSCredential]$SqlCredential
+	)
+	
+	try { $server = Connect-SqlServer -SqlServer $SqlServer -SqlCredential $SqlCredential -ParameterConnection }
+	catch { return }
+	
+	# Populate arrays
+	$databaselist = @()
+	
+	if ($server.InstallDatabases.Count -gt 255)
+	{
+		# Don't slow them down by building a list that likely won't be used anyway
+		$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+		$attributes = New-Object System.Management.Automation.ParameterAttribute
+		$attributes.ParameterSetName = "__AllParameterSets"
+		$attributes.Mandatory = $false
+		$InstallDatabase = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("InstallDatabase", [String], $attributes)
+		$newparams.Add("InstallDatabase", $InstallDatabase)
+		return $newparams
+	}
+	
+	$databaselist = $server.databases.name
+	
+	# Reusable parameter setup
+	$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+	$attributes = New-Object System.Management.Automation.ParameterAttribute
+	$attributes.ParameterSetName = "__AllParameterSets"
+	$attributes.Mandatory = $false
+	$attributes.Position = 3
+	
+	# InstallDatabase list parameter setup
+	if ($databaselist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($databaselist) { $attributeCollection.Add($dbvalidationset) }
+	$attributeCollection.Add($alias)
+	$InstallDatabase = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("InstallDatabase", [String], $attributeCollection)
+	
+	$newparams.Add("InstallDatabase", $InstallDatabase)
+	$server.ConnectionContext.Disconnect()
+	
+	return $newparams
+}
+
+Function Get-ParamServerCertificate
+{
+<# 
+.SYNOPSIS 
+Internal function. Returns System.Management.Automation.RuntimeDefinedParameterDictionary 
+filled with database list from specified SQL Server server.
+
+#>	
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory = $true)]
+		[Alias("ServerInstance", "SqlInstance")]
+		[object]$SqlServer,
+		[System.Management.Automation.PSCredential]$SqlCredential
+	)
+	
+	try { $server = Connect-SqlServer -SqlServer $SqlServer -SqlCredential $SqlCredential -ParameterConnection }
+	catch { return }
+x
+	$certlist = $server.Databases['master'].Certificates.name | Where-Object { $_ -notlike '##MS_*' }
+	
+	# Reusable parameter setup
+	$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+	$attributes = New-Object System.Management.Automation.ParameterAttribute
+	$attributes.ParameterSetName = "__AllParameterSets"
+	$attributes.Mandatory = $false
+	$attributes.Position = 3
+	
+	# ServerCertificate list parameter setup
+	if ($certlist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $certlist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($certlist) { $attributeCollection.Add($dbvalidationset) }
+	$attributeCollection.Add($alias)
+	$ServerCertificate = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerCertificate", [String], $attributeCollection)
+	
+	$newparams.Add("ServerCertificate", $ServerCertificate)
+	$server.ConnectionContext.Disconnect()
+	
+	return $newparams
+}
+
+Function Get-ParamSqlCredential
+{
+<# 
+.SYNOPSIS 
+Internal function. Returns System.Management.Automation.RuntimeDefinedParameterDictionary 
+filled with SQL Credential from specified SQL Server server name.
+#>	
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory = $true)]
+		[Alias("ServerInstance", "SqlInstance")]
+		[object]$SqlServer,
+		[System.Management.Automation.PSCredential]$SqlCredential
+	)
+	
+	try { $server = Connect-SqlServer -SqlServer $SqlServer -SqlCredential $SqlCredential -ParameterConnection }
+	catch { return }
+	
+	# Populate arrays
+	$credentiallist = @()
+	foreach ($credential in $server.Credential)
+	{
+		$credentiallist += $credential.name
+	}
+	
+	# Reusable parameter setup
+	$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+	$attributes = New-Object System.Management.Automation.ParameterAttribute
+	
+	$attributes.ParameterSetName = "__AllParameterSets"
+	$attributes.Mandatory = $false
+	$attributes.Position = 3
+	
+	# Database list parameter setup
+	if ($credentiallist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $credentiallist }
+	$lsattributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$lsattributes.Add($attributes)
+	if ($credentiallist) { $lsattributes.Add($dbvalidationset) }
+	$Credential = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("Credential", [String[]], $lsattributes)
+	
+	$newparams.Add("Credential", $Credential)
+	$server.ConnectionContext.Disconnect()
+	
+	return $newparams
+}
+
+Function Get-ParamServerAsymmetricKey
+{
+<# 
+.SYNOPSIS 
+Internal function. Returns System.Management.Automation.RuntimeDefinedParameterDictionary 
+filled with database list from specified SQL Server server.
+
+#>	
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory = $true)]
+		[Alias("ServerInstance", "SqlInstance")]
+		[object]$SqlServer,
+		[System.Management.Automation.PSCredential]$SqlCredential
+	)
+	
+	try { $server = Connect-SqlServer -SqlServer $SqlServer -SqlCredential $SqlCredential -ParameterConnection }
+	catch { return }
+	
+	$keylist = $server.Databases['master'].AsymmetricKeys.name | Where-Object { $_ -notlike '##MS_*' }
+	
+	# Reusable parameter setup
+	$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+	$attributes = New-Object System.Management.Automation.ParameterAttribute
+	$attributes.ParameterSetName = "__AllParameterSets"
+	$attributes.Mandatory = $false
+	$attributes.Position = 3
+	
+	# ServerAsymmetricKey list parameter setup
+	if ($keylist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($keylist) { $attributeCollection.Add($dbvalidationset) }
+	$attributeCollection.Add($alias)
+	$ServerAsymmetricKey = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerAsymmetricKey", [String], $attributeCollection)
+	
+	$newparams.Add("ServerAsymmetricKey", $ServerAsymmetricKey)
+	$server.ConnectionContext.Disconnect()
+	
+	return $newparams
+}
+
+Function Get-ParamServerSymmetricKey
+{
+<# 
+.SYNOPSIS 
+Internal function. Returns System.Management.Automation.RuntimeDefinedParameterDictionary 
+filled with database list from specified SQL Server server.
+
+#>	
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory = $true)]
+		[Alias("ServerInstance", "SqlInstance")]
+		[object]$SqlServer,
+		[System.Management.Automation.PSCredential]$SqlCredential
+	)
+	
+	try { $server = Connect-SqlServer -SqlServer $SqlServer -SqlCredential $SqlCredential -ParameterConnection }
+	catch { return }
+	
+	$keylist = $server.Databases['master'].SymmetricKeys.name | Where-Object { $_ -notlike '##MS_*' }
+	
+	# Reusable parameter setup
+	$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+	$attributes = New-Object System.Management.Automation.ParameterAttribute
+	$attributes.ParameterSetName = "__AllParameterSets"
+	$attributes.Mandatory = $false
+	$attributes.Position = 3
+	
+	# ServerSymmetricKey list parameter setup
+	if ($keylist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($keylist) { $attributeCollection.Add($dbvalidationset) }
+	$attributeCollection.Add($alias)
+	$ServerSymmetricKey = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerSymmetricKey", [String], $attributeCollection)
+	
+	$newparams.Add("ServerSymmetricKey", $ServerSymmetricKey)
+	$server.ConnectionContext.Disconnect()
+	
+	return $newparams
+}
+
+
+

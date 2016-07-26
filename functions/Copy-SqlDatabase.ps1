@@ -655,7 +655,6 @@ It also includes the support databases (ReportServer, ReportServerTempDb, distri
 	
 	PROCESS
 	{
-		
 		# Convert from RuntimeDefinedParameter object to regular array
 		$databases = $psboundparameters.Databases
 		$exclude = $psboundparameters.Exclude
