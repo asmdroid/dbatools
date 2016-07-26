@@ -35,35 +35,6 @@ Install-SqlWhoIsActive -SqlServer sqlserver2014a -SqlCredential $cred
 
 Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
 
-[string]$Databases,
-[string]$FragmentationLow,
-[string]$FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
-[string]$FragmentationHigh = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
-[int]$FragmentationLevel1  = 5,
-[int]$FragmentationLevel2  = 30,
-[int]$PageCountLevel = 1000,
-[switch]$SortInTempdb,
-[string]$MaxDOP int,
-[string]$FillFactor int,
-[string]$PadIndex,
-[switch]$NoLOBCompaction,
-[string]$UpdateStatistics,
-[switch]$OnlyModifiedStatistics,
-[string]$StatisticsSample int,
-[switch]$StatisticsResample,
-[string]$NoPartitionLevel,
-[switch]$MSShippedObjects,
-[string]$Indexes,
-[int]$TimeLimit,
-[int]$Delay,
-[int]$WaitAtLowPriorityMaxDuration,
-[string]$WaitAtLowPriorityAbortAfterWait,
-[int]$LockTimeout ,
-[switch]$LogToTable,
-[switch]$OutputOnly
-	
-	#$NoLOBCompaction.
-	$NoPartitionLevel
 #>
 	
 	[CmdletBinding()]
@@ -73,9 +44,32 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		[object]$SqlServer,
 		[object]$SqlCredential,
 		[string]$Path,
-		[switch]$OutputDatabaseName,
-		[switch]$Force,
-		[string]$Databases
+		[string]$Databases,
+		[string]$FragmentationLow,
+		[string]$FragmentationMedium = 'INDEX_REORGANIZE,INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
+		[string]$FragmentationHigh = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE',
+		[int]$FragmentationLevel1 = 5,
+		[int]$FragmentationLevel2 = 30,
+		[int]$PageCountLevel = 1000,
+		[switch]$SortInTempdb,
+		[int]$MaxDOP ,
+		[int]$FillFactor,
+		[string]$PadIndex,
+		[switch]$NoLOBCompaction,
+		[string]$UpdateStatistics,
+		[switch]$OnlyModifiedStatistics,
+		[int]$StatisticsSample,
+		[switch]$StatisticsResample,
+		[string]$NoPartitionLevel,
+		[switch]$MSShippedObjects,
+		[string]$Indexes,
+		[int]$TimeLimit,
+		[int]$Delay,
+		[int]$WaitAtLowPriorityMaxDuration,
+		[string]$WaitAtLowPriorityAbortAfterWait,
+		[int]$LockTimeout,
+		[switch]$LogToTable,
+		[switch]$OutputOnly
 	)
 	
 	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
@@ -83,38 +77,66 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	BEGIN
 	{
 		
-		# JOIN THE $CheckCommands WITH -JOIN ','
+		switch ($OutputOnly)
+		{
+			$true { $Execute = $false }
+			$false { $Execute = $true }
+		}
+		
+		switch ($NoLOBCompaction)
+		{
+			$true { $LOBCompaction = $false }
+			$false { $LOBCompaction = $true }
+		}
+		
+		switch ($NoPartitionLevel)
+		{
+			$true { $PartitionLevel = $false }
+			$false { $PartitionLevel = $true }
+		}
+		
+		$switches = 'SortInTempdb', 'LOBCompaction', 'OnlyModifiedStatistics', 'StatisticsResample', 'MSShippedObjects', 'LogToTable', 'Execute', 'PartitionLevel'
+		
+		foreach ($switch in $switches)
+		{
+			$paramvalue = Get-Variable -Name $switch -ValueOnly
+			
+			if ($paramvalue -eq $true)
+			{
+				Set-Variable -Name $switch -Value 'Y'
+			}
+			else
+			{
+				Set-Variable -Name $switch -Value 'N'
+			}
+			
+		}
+		
+		$CheckCommands = $CheckCommands -join  ","
+		
 		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
 		$source = $sourceserver.DomainInstanceName
 		
-		Function Get-SpWhoIsActive
+		Function Get-IndexOptimize
 		{
 			
 			$url = 'http://sqlblog.com/files/folders/42453/download.aspx'
 			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$zipfile = "$temp\spwhoisactive.zip"
+			$sqlfile = "$temp\IndexOptimize.zip"
 			
 			try
 			{
-				Invoke-WebRequest $url -OutFile $zipfile
+				Invoke-WebRequest $url -OutFile $sqlfile
 			}
 			catch
 			{
 				#try with default proxy and usersettings
 				(New-Object System.Net.WebClient).Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-				Invoke-WebRequest $url -OutFile $zipfile
+				Invoke-WebRequest $url -OutFile $sqlfile
 			}
 			
 			# Unblock if there's a block
-			Unblock-File $zipfile -ErrorAction SilentlyContinue
-			
-			# Keep it backwards compatible
-			$shell = New-Object -COM Shell.Application
-			$zipPackage = $shell.NameSpace($zipfile)
-			$destinationFolder = $shell.NameSpace($temp)
-			$destinationFolder.CopyHere($zipPackage.Items())
-			
-			Remove-Item -Path $zipfile
+			Unblock-File $sqlfile -ErrorAction SilentlyContinue
 		}
 		
 		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
@@ -171,7 +193,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 				try
 				{
 					Write-Output "Downloading sp_WhoIsActive zip file, unzipping and $actioning."
-					Get-SpWhoIsActive
+					Get-IndexOptimize
 				}
 				catch
 				{

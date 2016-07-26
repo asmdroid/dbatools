@@ -21,27 +21,6 @@ Windows Authentication will be used if SqlCredential is not specified. SQL Serve
 
 .PARAMETER OutputDatabaseName
 Outputs just the database name instead of the success message
-
-
-	CreateJobs
-	BackupDirectory (do a check)
-	CleanupTime
-	OutputFileDirectory
-	LogToTable
-	Database
-	[string]$JobNameSystemFull = 'DatabaseBackup - SYSTEM_DATABASES - FULL',
-	[string]$JobNameUserDiff = 'DatabaseBackup - USER_DATABASES - DIFF',
-	[string]$JobNameUserFull = 'DatabaseBackup - USER_DATABASES - FULL',
-	[string]$JobNameUserLog =  'DatabaseBackup - USER_DATABASES - LOG',
-	[string]$JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES'
-	[string]$JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES'
-	[string]$JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES'
-	[string]$JobNameDeleteBackupHistory = 'sp_delete_backuphistory'
-	[string]$JobNamePurgeBackupHistory = 'sp_purge_jobhistory'
-	[string]$JobNameOutputFileCleanup = 'Output File Cleanup'
-	[string]$JobNameComandLogCleanup =  'CommandLog Cleanup'
-	
-
 	
 #>
 	
@@ -51,7 +30,20 @@ Outputs just the database name instead of the success message
 		[Alias("ServerInstance", "SqlInstance")]
 		[object]$SqlServer,
 		[object]$SqlCredential,
-		[string]$Path
+		[string]$Path,
+		[switch]$CreateJobs,
+		[string]$JobNameSystemFull = 'DatabaseBackup - SYSTEM_DATABASES - FULL',
+		[string]$JobNameUserDiff = 'DatabaseBackup - USER_DATABASES - DIFF',
+		[string]$JobNameUserFull = 'DatabaseBackup - USER_DATABASES - FULL',
+		[string]$JobNameUserLog = 'DatabaseBackup - USER_DATABASES - LOG',
+		[string]$JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES',
+		[string]$JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES',
+		[string]$JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES',
+		[string]$JobNameDeleteBackupHistory = 'sp_delete_backuphistory',
+		[string]$JobNamePurgeBackupHistory = 'sp_purge_jobhistory',
+		[string]$JobNameOutputFileCleanup = 'Output File Cleanup',
+		[string]$JobNameComandLogCleanup = 'CommandLog Cleanup'
+		)
 	
 	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
 	

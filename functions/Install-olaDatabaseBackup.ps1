@@ -77,7 +77,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	
 #>
 	
-	[CmdletBinding()]
+	[CmdletBinding(DefaultParameterSetName = "Default", SupportsShouldProcess = $true)]
 	Param (
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Alias("ServerInstance", "SqlInstance")]
@@ -97,6 +97,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		[string]$Compress,
 		[switch]$CopyOnly,
 		[switch]$ChangeBackupType,
+		[parameter(ParameterSetName = "OtherSoftware")]
 		[ValidateSet('Native', 'Litespeed', 'SQLBackup', 'SQLSafe')]
 		[string]$BackupSoftware = 'Native',
 		[switch]$CheckSum,
@@ -105,6 +106,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		[int]$MaxTransferSize,
 		[ValidateLength(0, 64)]
 		[int]$NumberOfFiles,
+		[parameter(ParameterSetName = "OtherSoftware")]
 		[ValidateScript({
 				switch ($BackupSoftware)
 				{
@@ -116,6 +118,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 			})]
 		[int]$CompressionLevel,
 		[string]$Description,
+		[parameter(ParameterSetName = "OtherSoftware")]
 		[ValidateScript({
 				switch ($BackupSoftware)
 				{
@@ -131,48 +134,41 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 					Default { return $false }
 				}
 			})]
+		[Alias("Throttle")]
 		[int]$ThrottlePercent,
 		[switch]$Encrypt,
 		[ValidateSet('RC2_40', 'RC2_56', 'RC2_112', 'RC2_128', 'TRIPLE_DES_3KEY', 'RC4_128', 'AES_128', 'AES_192', 'AES_256')]
 		[string]$EncryptionAlgorithm,
-		# This needs to be a dynamic param
-
 		[string]$ServerCertificate,
-		# This needs to be a dynamic param
-
 		[string]$ServerAsymmetricKey,
-		# This needs to be a dynamic param
-
 		[string]$EncryptionKey,
 		[switch]$ReadWriteFileGroups,
 		[switch]$OverrideBackupPreference,
 		[switch]$NoRecovery,
 		[string]$URL,
-		# This needs to be a dynamic param
-
 		[string]$Credential,
-		# validate
-
 		[string]$MirrorDirectory,
+		[Parameter(Mandatory = $false, HelpMessage = "Specify cleanup time in hours. Infinite = 0, 7d = 168, 30d = 720, 60d = 1440, 90d = 2160, 365d = 8760")]
 		[int]$MirrorCleanupTime,
 		[ValidateSet('AfterBackup', 'BeforeBackup')]
 		[string]$MirrorCleanupMode = 'AfterBackup',
 		[switch]$LogToTable,
 		[switch]$OutputOnly
 		
-		# NULL	SQL Server native backup (the default)
-		# LITESPEED	LiteSpeed for SQL Server
-		# SQLBACKUP	Red Gate SQL Backup Pro
-		# SQLSAFE	Idera SQL Safe Backup
-		
-		# Set the LiteSpeed for SQL Server, Red Gate SQL Backup Pro, or Idera SQL Safe Backup compression level.
-		# In LiteSpeed for SQL Server, the compression levels 0 to 8 are supported. In Red Gate SQL Backup Pro, levels 0 to 4 are supported, and in Idera SQL Safe Backup, levels 1 to 4 are supported.
-		# Specify the time, in hours, after which the backup files are deleted. If no time is specified, then no backup files are deleted.
-		# DatabaseBackup has a check to verify that transaction log backups that are newer than the most recent full or differential backup are not deleted.
-		
 	)
 	
-	DynamicParam { if ($sqlserver) { return Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential } }
+	DynamicParam
+	{
+		if ($sqlserver)
+		{
+			$dbparams = Get-ParamInstallDatabase -SqlServer $sqlserver -SqlCredential $SqlCredential
+			$credparams = Get-ParamSqlCredentials -SqlServer $sqlserver -SqlCredential $SqlCredential
+			#$allparams = Get-ParamSqlDatabaseFileTypes -SqlServer $sqlserver -SqlCredential $SqlCredential
+			#$null = $allparams.Add("Databases", $dbparams.Databases)
+			#return $allparams
+		}
+		
+	}
 	
 	BEGIN
 	{
@@ -180,38 +176,98 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
 		$source = $sourceserver.DomainInstanceName
 		
-		Function Get-SpWhoIsActive
+		# Parameter switching and cleaning
+		
+		if ($CleanupTime -gt 0 -and $CleanupTimeDays -gt 0)
+		{
+			throw "You must pick either CleanupTime or CleanupTimeDays"	
+		}
+		
+		switch ($CleanupMode)
+		{
+			'AfterBackup' { $CleanupMode = 'AFTER_BACKUP' }
+			'BeforeBackup' { $CleanupMode = 'BEFORE_BACKUP' }
+		}
+		
+		switch ($MirrorCleanupMode)
+		{
+			'AfterBackup' { $MirrorCleanupMode = 'AFTER_BACKUP' }
+			'BeforeBackup' { $MirrorCleanupMode = 'BEFORE_BACKUP' }
+		}
+		
+		switch ($BackupSoftware)
+		{
+			'Native' { $BackupSoftware = $null }
+		}
+		
+		switch ($Compress)
+		{
+			'Default' { $Compress = $null }
+		}
+		
+		switch ($OutputOnly)
+		{
+			$true { $Execute = $false }
+			$false { $Execute = $true }
+		}
+		
+		if ($Directory.Length -gt 0)
+		{
+			Test-SqlPath -SqlServer $sourceserver -Path $Directory
+		}
+	
+		if ($MirrorDirectory.Length -gt 0)
+		{
+			Test-SqlPath -SqlServer $sourceserver -Path $MirrorDirectory
+		}
+		
+		if ($CleanupTimeDays -gt 0)
+		{
+			$CleanupTime = $CleanupTimeDays*24
+		}
+		
+		$switches = 'Verify', 'CopyOnly', 'ChangeBackupType', 'CheckSum', 'Encrypt', 'ReadWriteFileGroups', 'OverrideBackupPreference', 'NoRecovery', 'LogToTable', 'Execute'
+		
+		foreach ($switch in $switches)
+		{
+			$paramvalue = Get-Variable -Name $switch -ValueOnly
+			
+			if ($paramvalue -eq $true)
+			{
+				Set-Variable -Name $switch -Value 'Y'
+			}
+			else
+			{
+				Set-Variable -Name $switch -Value 'N'
+			}
+			
+		}
+		
+		
+		Function Get-DatabaseBackup
 		{
 			
-			$url = 'http://sqlblog.com/files/folders/42453/download.aspx'
+			$url = 'https://ola.hallengren.com/scripts/DatabaseBackup.sql'
 			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$zipfile = "$temp\spwhoisactive.zip"
+			$sqlfile = "$temp\DatabaseBackup.sql"
 			
 			try
 			{
-				Invoke-WebRequest $url -OutFile $zipfile
+				Invoke-WebRequest $url -OutFile $sqlfile
 			}
 			catch
 			{
 				#try with default proxy and usersettings
 				(New-Object System.Net.WebClient).Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-				Invoke-WebRequest $url -OutFile $zipfile
+				Invoke-WebRequest $url -OutFile $sqlfile
 			}
 			
 			# Unblock if there's a block
-			Unblock-File $zipfile -ErrorAction SilentlyContinue
-			
-			# Keep it backwards compatible
-			$shell = New-Object -COM Shell.Application
-			$zipPackage = $shell.NameSpace($zipfile)
-			$destinationFolder = $shell.NameSpace($temp)
-			$destinationFolder.CopyHere($zipPackage.Items())
-			
-			Remove-Item -Path $zipfile
+			Unblock-File $sqlfile -ErrorAction SilentlyContinue
 		}
 		
 		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
-		$Database = $psboundparameters.Database
+		$InstallDatabase = $psboundparameters.Database
 		
 		if ($Header -like '*update*')
 		{
@@ -239,25 +295,25 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	{
 		Write-Warning "hello"
 		return
-		if ($database.length -eq 0)
+		if ($InstallDatabase.length -eq 0)
 		{
-			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle Maintenance Plans" -Header $header -DefaultDb "master"
+			$InstallDatabase = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle Maintenance Plans" -Header $header -DefaultDb "master"
 			
-			if ($database.length -eq 0)
+			if ($InstallDatabase.length -eq 0)
 			{
 				throw "You must select a database to $action the procedure"
 			}
 			
-			if ($database -ne 'master')
+			if ($InstallDatabase -ne 'master')
 			{
-				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $database"
+				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $InstallDatabase"
 			}
 		}
 		
 		if ($Path.Length -eq 0)
 		{
 			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$file = Get-ChildItem "$temp\who*active*.sql" | Select -First 1
+			$file = Get-ChildItem "$temp\DatabaseBackup.sql" | Select -First 1
 			$path = $file.FullName
 			
 			if ($path.Length -eq 0 -or $force -eq $true)
@@ -265,7 +321,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 				try
 				{
 					Write-Output "Downloading Maintenance Plans zip file, unzipping and $actioning."
-					Get-SpWhoIsActive
+					Get-DatabaseBackup
 				}
 				catch
 				{
@@ -290,7 +346,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		{
 			try
 			{
-				$null = $sourceserver.databases[$database].ExecuteNonQuery($batch)
+				$null = $sourceserver.databases[$InstallDatabase].ExecuteNonQuery($batch)
 				
 			}
 			catch
@@ -307,11 +363,11 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		
 		if ($OutputDatabaseName -eq $true)
 		{
-			return $database
+			return $InstallDatabase
 		}
 		else
 		{
-			Write-Output "Finished $actioning Maintenance Plans in $database on $SqlServer "
+			Write-Output "Finished $actioning Maintenance Plans in $InstallDatabase on $SqlServer "
 		}
 	}
 }
