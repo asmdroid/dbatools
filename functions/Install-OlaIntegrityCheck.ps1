@@ -65,7 +65,7 @@
 		}
 		
 		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
-		$Database = $psboundparameters.Database
+		$installdatabase = $psboundparameters.InstallDatabase
 		
 		if ($Header -like '*update*')
 		{
@@ -94,41 +94,35 @@
 	PROCESS
 	{
 		
-		if ($database.length -eq 0)
+		if ($installdatabase.length -eq 0)
 		{
-			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle MaintenancePlan" -Header $header -DefaultDb "master"
+			$installdatabase = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle MaintenancePlan" -Header $header -DefaultDb "master"
 			
-			if ($database.length -eq 0)
+			if ($installdatabase.length -eq 0)
 			{
 				throw "You must select a database to $action the procedure"
-			}
-			
-			if ($database -ne 'master')
-			{
-				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $database"
 			}
 		}
 		
 		if ($Path.Length -eq 0)
 		{
 			$sqlfile = "$temp\MaintenanceSolution.sql"
-			$path = $file.FullName
+			$path = $sqlfile.FullName
 			
-			if ($path.Length -eq 0 -or $force -eq $true)
+			$exists = Test-Path -Path $path
+			
+			if ($exists -eq $false -or $force -eq $true)
 			{
 				try
 				{
-					Write-Output "Downloading MaintenancePlan zip file, unzipping and $actioning."
+					Write-Output "Downloading MaintenancePlan and $actioning."
 					Get-OlaMaintenanceSolution
 				}
 				catch
 				{
-					throw "Couldn't download MaintenancePlan. Please download and $action manually from http://sqlblog.com/files/folders/42453/download.aspx."
+					throw "Couldn't download MaintenancePlan. Please download and $action manually from https://ola.hallengren.com/scripts/MaintenanceSolution.sql"
 				}
 			}
-			
-			$path = (Get-ChildItem "$temp\who*active*.sql" | Select -First 1).Name
-			$path = "$temp\$path"
 		}
 		
 		if ((Test-Path $Path) -eq $false)
@@ -144,7 +138,7 @@
 		{
 			try
 			{
-				$null = $sourceserver.databases[$database].ExecuteNonQuery($batch)
+				$null = $sourceserver.databases[$installdatabase].ExecuteNonQuery($batch)
 				
 			}
 			catch
@@ -161,11 +155,11 @@
 		
 		if ($OutputDatabaseName -eq $true)
 		{
-			return $database
+			return $installdatabase
 		}
 		else
 		{
-			Write-Output "Finished $actioning MaintenancePlan in $database on $SqlServer "
+			Write-Output "Finished $actioning MaintenancePlan in $installdatabase on $SqlServer "
 		}
 	}
 }

@@ -111,10 +111,10 @@ filled with database list from specified SQL Server server.
 	$attributes.Position = 3
 	
 	# Database list parameter setup
-	if ($databaselist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
+	if ($databaselist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
 	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$attributeCollection.Add($attributes)
-	if ($databaselist) { $attributeCollection.Add($dbvalidationset) }
+	if ($databaselist) { $attributeCollection.Add($validationset) }
 	$attributeCollection.Add($alias)
 	$Databases = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("Databases", [String[]], $attributeCollection)
 	
@@ -125,7 +125,7 @@ filled with database list from specified SQL Server server.
 	$eattributes.Position = 20
 	$dbexcludeattributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$dbexcludeattributes.Add($eattributes)
-	if ($databaselist) { $dbexcludeattributes.Add($dbvalidationset) }
+	if ($databaselist) { $dbexcludeattributes.Add($validationset) }
 	$Exclude = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("Exclude", [String[]], $dbexcludeattributes)
 	
 	$newparams.Add("Databases", $Databases)
@@ -180,10 +180,10 @@ filled with database list from specified SQL Server server.
 	$attributes.Position = 3
 	
 	# Database list parameter setup
-	if ($databaselist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
+	if ($databaselist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
 	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$attributeCollection.Add($attributes)
-	if ($databaselist) { $attributeCollection.Add($dbvalidationset) }
+	if ($databaselist) { $attributeCollection.Add($validationset) }
 	$attributeCollection.Add($alias)
 	$Database = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("Database", [String], $attributeCollection)
 	
@@ -541,10 +541,10 @@ filled with Linked Servers from specified server name.
 	$attributes.Position = 3
 	
 	# Database list parameter setup
-	if ($linkedserverlist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $linkedserverlist }
+	if ($linkedserverlist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $linkedserverlist }
 	$lsattributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$lsattributes.Add($attributes)
-	if ($linkedserverlist) { $lsattributes.Add($dbvalidationset) }
+	if ($linkedserverlist) { $lsattributes.Add($validationset) }
 	$LinkedServers = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("LinkedServers", [String[]], $lsattributes)
 	
 	$newparams.Add("LinkedServers", $LinkedServers)
@@ -1630,10 +1630,10 @@ filled with database list from specified SQL Server server.
 	$attributes.Position = 3
 	
 	# InstallDatabase list parameter setup
-	if ($databaselist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
+	if ($databaselist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
 	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$attributeCollection.Add($attributes)
-	if ($databaselist) { $attributeCollection.Add($dbvalidationset) }
+	if ($databaselist) { $attributeCollection.Add($validationset) }
 	$attributeCollection.Add($alias)
 	$InstallDatabase = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("InstallDatabase", [String], $attributeCollection)
 	
@@ -1672,10 +1672,10 @@ x
 	$attributes.Position = 3
 	
 	# ServerCertificate list parameter setup
-	if ($certlist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $certlist }
+	if ($certlist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $certlist }
 	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$attributeCollection.Add($attributes)
-	if ($certlist) { $attributeCollection.Add($dbvalidationset) }
+	if ($certlist) { $attributeCollection.Add($validationset) }
 	$attributeCollection.Add($alias)
 	$ServerCertificate = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerCertificate", [String], $attributeCollection)
 	
@@ -1719,10 +1719,10 @@ filled with SQL Credential from specified SQL Server server name.
 	$attributes.Position = 3
 	
 	# Database list parameter setup
-	if ($credentiallist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $credentiallist }
+	if ($credentiallist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $credentiallist }
 	$lsattributes = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$lsattributes.Add($attributes)
-	if ($credentiallist) { $lsattributes.Add($dbvalidationset) }
+	if ($credentiallist) { $lsattributes.Add($validationset) }
 	$Credential = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("Credential", [String[]], $lsattributes)
 	
 	$newparams.Add("Credential", $Credential)
@@ -1760,10 +1760,10 @@ filled with database list from specified SQL Server server.
 	$attributes.Position = 3
 	
 	# ServerAsymmetricKey list parameter setup
-	if ($keylist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
+	if ($keylist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
 	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$attributeCollection.Add($attributes)
-	if ($keylist) { $attributeCollection.Add($dbvalidationset) }
+	if ($keylist) { $attributeCollection.Add($validationset) }
 	$attributeCollection.Add($alias)
 	$ServerAsymmetricKey = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerAsymmetricKey", [String], $attributeCollection)
 	
@@ -1802,10 +1802,10 @@ filled with database list from specified SQL Server server.
 	$attributes.Position = 3
 	
 	# ServerSymmetricKey list parameter setup
-	if ($keylist) { $dbvalidationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
+	if ($keylist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
 	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
 	$attributeCollection.Add($attributes)
-	if ($keylist) { $attributeCollection.Add($dbvalidationset) }
+	if ($keylist) { $attributeCollection.Add($validationset) }
 	$attributeCollection.Add($alias)
 	$ServerSymmetricKey = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerSymmetricKey", [String], $attributeCollection)
 	
@@ -1816,4 +1816,107 @@ filled with database list from specified SQL Server server.
 }
 
 
-
+Function Get-ParamMaintenanceSolution
+{
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory = $true)]
+		[Alias("ServerInstance", "SqlInstance")]
+		[object]$SqlServer,
+		[System.Management.Automation.PSCredential]$SqlCredential
+	)
+	
+	try { $server = Connect-SqlServer -SqlServer $SqlServer -SqlCredential $SqlCredential -ParameterConnection }
+	catch { return }
+	
+	# Reusable parameter setup
+	$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+	$attributes = New-Object System.Management.Automation.ParameterAttribute
+	$attributes.ParameterSetName = "__AllParameterSets"
+	$attributes.Mandatory = $false
+	
+	###### InstallDatabase ######
+	$databaselist = @()
+	
+	if ($server.InstallDatabases.Count -gt 255)
+	{
+		$newparams = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+		$attributes = New-Object System.Management.Automation.ParameterAttribute
+		$attributes.ParameterSetName = "__AllParameterSets"
+		$attributes.Mandatory = $false
+		$InstallDatabase = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("InstallDatabase", [String], $attributes)
+		$newparams.Add("InstallDatabase", $InstallDatabase)
+		
+	}
+	else
+	{
+		
+		$databaselist = $server.databases.name
+		
+		if ($databaselist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $databaselist }
+		$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+		$attributeCollection.Add($attributes)
+		if ($databaselist) { $attributeCollection.Add($validationset) }
+		$InstallDatabase = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("InstallDatabase", [String], $attributeCollection)
+		
+		$newparams.Add("InstallDatabase", $InstallDatabase)
+	}
+	
+	###### Certificates ######
+	$certlist = $server.Databases['master'].Certificates.name | Where-Object { $_ -notlike '##MS_*' }
+	
+	# ServerCertificate list parameter setup
+	if ($certlist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $certlist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($certlist) { $attributeCollection.Add($validationset) }
+	$ServerCertificate = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerCertificate", [String], $attributeCollection)
+	
+	$newparams.Add("ServerCertificate", $ServerCertificate)
+	
+	###### Credentials ######
+	$credentiallist = @()
+	
+	foreach ($credential in $server.Credentials)
+	{
+		Write-Warning $credential
+		$credentiallist += $credential.name
+	}
+	
+	# Credentials list parameter setup
+	if ($credentiallist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $credentiallist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($credentiallist) { $attributeCollection.Add($validationset) }
+	$Credential = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("Credential", [String], $attributeCollection)
+	
+	$newparams.Add("Credential", $Credential)
+	
+	###### AsymmetricKeys ######
+	$keylist = $server.Databases['master'].AsymmetricKeys.name | Where-Object { $_ -notlike '##MS_*' }
+	
+	# ServerAsymmetricKey list parameter setup
+	if ($keylist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($keylist) { $attributeCollection.Add($validationset) }
+	$ServerAsymmetricKey = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerAsymmetricKey", [String], $attributeCollection)
+	
+	$newparams.Add("ServerAsymmetricKey", $ServerAsymmetricKey)
+	
+	###### SymmetricKeys ######
+	
+	$keylist = $server.Databases['master'].SymmetricKeys.name | Where-Object { $_ -notlike '##MS_*' }
+	
+	# ServerSymmetricKey list parameter setup
+	if ($keylist) { $validationset = New-Object System.Management.Automation.ValidateSetAttribute -ArgumentList $keylist }
+	$attributeCollection = New-Object -Type System.Collections.ObjectModel.Collection[System.Attribute]
+	$attributeCollection.Add($attributes)
+	if ($keylist) { $attributeCollection.Add($validationset) }
+	$ServerSymmetricKey = New-Object -Type System.Management.Automation.RuntimeDefinedParameter("ServerSymmetricKey", [String], $attributeCollection)
+	
+	$newparams.Add("ServerSymmetricKey", $ServerSymmetricKey)
+	
+	$server.ConnectionContext.Disconnect()
+	return $newparams
+}

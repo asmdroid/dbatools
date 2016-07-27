@@ -153,9 +153,9 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		Function Get-IndexOptimize
 		{
 			
-			$url = 'http://sqlblog.com/files/folders/42453/download.aspx'
+			$url = 'https://ola.hallengren.com/scripts/IndexOptimize.sql'
 			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$sqlfile = "$temp\IndexOptimize.zip"
+			$sqlfile = "$temp\IndexOptimize.sql"
 			
 			try
 			{
@@ -172,8 +172,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 			Unblock-File $sqlfile -ErrorAction SilentlyContinue
 		}
 		
-		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
-		$Database = $psboundparameters.Database
+		$InstallDatabase = $psboundparameters.InstallDatabase
 		
 		if ($Header -like '*update*')
 		{
@@ -199,41 +198,41 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 	
 	PROCESS
 	{ 
-		if ($database.length -eq 0)
+		if ($InstallDatabase.length -eq 0)
 		{
-			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle sp_WhoisActive" -Header $header -DefaultDb "master"
+			$InstallDatabase = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle sp_WhoisActive" -Header $header -DefaultDb "master"
 			
-			if ($database.length -eq 0)
+			if ($InstallDatabase.length -eq 0)
 			{
 				throw "You must select a database to $action the procedure"
 			}
 			
-			if ($database -ne 'master')
+			if ($InstallDatabase -ne 'master')
 			{
-				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $database"
+				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $InstallDatabase"
 			}
 		}
 		
 		if ($Path.Length -eq 0)
 		{
 			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$file = Get-ChildItem "$temp\who*active*.sql" | Select -First 1
+			$file = Get-ChildItem "$temp\IndexOptimize.sql" | Select -First 1
 			$path = $file.FullName
 			
 			if ($path.Length -eq 0 -or $force -eq $true)
 			{
 				try
 				{
-					Write-Output "Downloading sp_WhoIsActive zip file, unzipping and $actioning."
+					Write-Output "Downloading IndexOptimize.sql and $actioning."
 					Get-IndexOptimize
 				}
 				catch
 				{
-					throw "Couldn't download sp_WhoIsActive. Please download and $action manually from http://sqlblog.com/files/folders/42453/download.aspx."
+					throw "Couldn't download IndexOptimize.sql. Please download and $action manually from https://ola.hallengren.com/scripts/IndexOptimize.sql."
 				}
 			}
 			
-			$path = (Get-ChildItem "$temp\who*active*.sql" | Select -First 1).Name
+			$path = (Get-ChildItem "$temp\IndexOptimize.sql" | Select -First 1).Name
 			$path = "$temp\$path"
 		}
 		
@@ -250,7 +249,7 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		{
 			try
 			{
-				$null = $sourceserver.databases[$database].ExecuteNonQuery($batch)
+				$null = $sourceserver.databases[$InstallDatabase].ExecuteNonQuery($batch)
 				
 			}
 			catch
@@ -267,11 +266,11 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		
 		if ($OutputDatabaseName -eq $true)
 		{
-			return $database
+			return $InstallDatabase
 		}
 		else
 		{
-			Write-Output "Finished $actioning sp_WhoIsActive in $database on $SqlServer "
+			Write-Output "Finished $actioning IndexOptimize in $InstallDatabase on $SqlServer "
 		}
 	}
 }

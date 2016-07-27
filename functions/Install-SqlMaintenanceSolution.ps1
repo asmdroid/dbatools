@@ -2,7 +2,7 @@
 {
 <#
 .SYNOPSIS
-Automatically installs or updates Ola Hallengren's Maintenance Solution. Wrapper for Install-SqlDatabaseBackup, Install-SqlDatabaseIntegrityCheck and Install-SqlIndexOptimize.
+Automatically installs or updates Ola Hallengren's Maintenance Solution. Wrapper for Install-SqlDatabaseBackup, Install-SqlDatabaseIntegrityCheck and Install-SqlMaintenanceSolution.
 
 .DESCRIPTION
 This command downloads and installs Maintenance Solution, with Ola's permission.
@@ -38,7 +38,7 @@ Outputs just the database name instead of the success message
 		[string]$JobNameUserLog = 'DatabaseBackup - USER_DATABASES - LOG',
 		[string]$JobNameSystemIntegrityCheck = 'DatabaseIntegrityCheck - SYSTEM_DATABASES',
 		[string]$JobNameUserIntegrityCheck = 'DatabaseIntegrityCheck - USER_DATABASES',
-		[string]$JobNameUserIndexOptimize = 'IndexOptimize - USER_DATABASES',
+		[string]$JobNameUserMaintenanceSolution = 'MaintenanceSolution - USER_DATABASES',
 		[string]$JobNameDeleteBackupHistory = 'sp_delete_backuphistory',
 		[string]$JobNamePurgeBackupHistory = 'sp_purge_jobhistory',
 		[string]$JobNameOutputFileCleanup = 'Output File Cleanup',
@@ -49,42 +49,37 @@ Outputs just the database name instead of the success message
 	
 	BEGIN
 	{
+		. "$PSScriptRoot\Install-OlaIntegrityCheck.ps1"
+		. "$PSScriptRoot\Install-OlaMaintenanceSolution.ps1"
+		. "$PSScriptRoot\Install-OlaDatabaseBackup.ps1"
 		
 		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
 		$source = $sourceserver.DomainInstanceName
 		
-		Function Get-SpWhoIsActive
+		Function Get-MaintenanceSolution
 		{
 			
-			$url = 'http://sqlblog.com/files/folders/42453/download.aspx'
+			$url = 'https://ola.hallengren.com/scripts/MaintenanceSolution.sql'
 			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$zipfile = "$temp\spwhoisactive.zip"
+			$sqlfile = "$temp\MaintenanceSolution.sql"
 			
 			try
 			{
-				Invoke-WebRequest $url -OutFile $zipfile
+				Invoke-WebRequest $url -OutFile $sqlfile
 			}
 			catch
 			{
 				#try with default proxy and usersettings
 				(New-Object System.Net.WebClient).Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-				Invoke-WebRequest $url -OutFile $zipfile
+				Invoke-WebRequest $url -OutFile $sqlfile
 			}
 			
 			# Unblock if there's a block
-			Unblock-File $zipfile -ErrorAction SilentlyContinue
-			
-			# Keep it backwards compatible
-			$shell = New-Object -COM Shell.Application
-			$zipPackage = $shell.NameSpace($zipfile)
-			$destinationFolder = $shell.NameSpace($temp)
-			$destinationFolder.CopyHere($zipPackage.Items())
-			
-			Remove-Item -Path $zipfile
+			Unblock-File $sqlfile -ErrorAction SilentlyContinue
 		}
-		
+				
 		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
-		$Database = $psboundparameters.Database
+		$InstallDatabase = $psboundparameters.InstallDatabase
 		
 		if ($Header -like '*update*')
 		{
@@ -110,42 +105,41 @@ Outputs just the database name instead of the success message
 	
 	PROCESS
 	{
-		
-		if ($database.length -eq 0)
+		if ($InstallDatabase.length -eq 0)
 		{
-			$database = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle sp_WhoisActive" -Header $header -DefaultDb "master"
+			$InstallDatabase = Show-SqlDatabaseList -SqlServer $sourceserver -Title "$actiontitle sp_WhoisActive" -Header $header -DefaultDb "master"
 			
-			if ($database.length -eq 0)
+			if ($InstallDatabase.length -eq 0)
 			{
 				throw "You must select a database to $action the procedure"
 			}
 			
-			if ($database -ne 'master')
+			if ($InstallDatabase -ne 'master')
 			{
-				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $database"
+				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $InstallDatabase"
 			}
 		}
 		
 		if ($Path.Length -eq 0)
 		{
 			$temp = ([System.IO.Path]::GetTempPath()).TrimEnd("\")
-			$file = Get-ChildItem "$temp\who*active*.sql" | Select -First 1
+			$file = Get-ChildItem "$temp\MaintenanceSolution.sql" | Select -First 1
 			$path = $file.FullName
 			
 			if ($path.Length -eq 0 -or $force -eq $true)
 			{
 				try
 				{
-					Write-Output "Downloading sp_WhoIsActive zip file, unzipping and $actioning."
-					Get-SpWhoIsActive
+					Write-Output "Downloading MaintenanceSolution.sql and $actioning."
+					Get-MaintenanceSolution
 				}
 				catch
 				{
-					throw "Couldn't download sp_WhoIsActive. Please download and $action manually from http://sqlblog.com/files/folders/42453/download.aspx."
+					throw "Couldn't download MaintenanceSolution.sql. Please download and $action manually from https://ola.hallengren.com/scripts/MaintenanceSolution.sql."
 				}
 			}
 			
-			$path = (Get-ChildItem "$temp\who*active*.sql" | Select -First 1).Name
+			$path = (Get-ChildItem "$temp\MaintenanceSolution.sql" | Select -First 1).Name
 			$path = "$temp\$path"
 		}
 		
@@ -162,7 +156,7 @@ Outputs just the database name instead of the success message
 		{
 			try
 			{
-				$null = $sourceserver.databases[$database].ExecuteNonQuery($batch)
+				$null = $sourceserver.databases[$InstallDatabase].ExecuteNonQuery($batch)
 				
 			}
 			catch
@@ -179,11 +173,11 @@ Outputs just the database name instead of the success message
 		
 		if ($OutputDatabaseName -eq $true)
 		{
-			return $database
+			return $InstallDatabase
 		}
 		else
 		{
-			Write-Output "Finished $actioning sp_WhoIsActive in $database on $SqlServer "
+			Write-Output "Finished $actioning MaintenanceSolution in $InstallDatabase on $SqlServer "
 		}
 	}
 }

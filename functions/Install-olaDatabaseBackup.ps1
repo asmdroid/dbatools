@@ -1,4 +1,4 @@
-﻿Function Install-olaDatabaseBackup
+﻿Function Install-OlaDatabaseBackup
 {
 <#
 .SYNOPSIS
@@ -40,15 +40,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .LINK
-https://dbatools.io/Install-olaDatabaseBackup
+https://dbatools.io/Install-OlaDatabaseBackup
 
 .EXAMPLE
-Install-olaDatabaseBackup -SqlServer sqlserver2014a -Database master
+Install-OlaDatabaseBackup -SqlServer sqlserver2014a -Database master
 
 Installs Maintenance Plans to sqlserver2014a's master database. Logs in using Windows Authentication.
 	
 .EXAMPLE   
-Install-olaDatabaseBackup -SqlServer sqlserver2014a -SqlCredential $cred
+Install-OlaDatabaseBackup -SqlServer sqlserver2014a -SqlCredential $cred
 
 Pops up a dialog box asking which database on sqlserver2014a you want to install the proc to. Logs into SQL Server using SQL Authentication.
 	
@@ -116,44 +116,40 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 		[switch]$Encrypt,
 		[ValidateSet('RC2_40', 'RC2_56', 'RC2_112', 'RC2_128', 'TRIPLE_DES_3KEY', 'RC4_128', 'AES_128', 'AES_192', 'AES_256')]
 		[string]$EncryptionAlgorithm,
-		#[string]$ServerCertificate,
-		#[string]$ServerAsymmetricKey,
+		# Anyone know where I can find this?
 		[string]$EncryptionKey,
 		[switch]$ReadWriteFileGroups,
 		[switch]$OverrideBackupPreference,
 		[switch]$NoRecovery,
 		[string]$URL,
-		#[string]$Credential,
 		[string]$MirrorDirectory,
 		[Parameter(Mandatory = $false, HelpMessage = "Specify cleanup time in hours. Infinite = 0, 7d = 168, 30d = 720, 60d = 1440, 90d = 2160, 365d = 8760")]
 		[int]$MirrorCleanupTime,
 		[ValidateSet('AfterBackup', 'BeforeBackup')]
 		[string]$MirrorCleanupMode = 'AfterBackup',
 		[switch]$LogToTable,
-		[switch]$OutputOnly
-		
+		[switch]$OutputOnly,
+		[string]$Header = "Scripts not found. To deploy, select a database or hit cancel to quit."
 	)
 	
 	DynamicParam
 	{
 		if ($sqlserver)
 		{
-			$paramserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
-			$allparams = Get-ParamInstallDatabase -SqlServer $paramserver
-			$credparams = Get-ParamSqlCredential -SqlServer $paramserver
-			$servercertparams = Get-ParamServerCertificate -SqlServer $paramserver
-			$null = $allparams.Add("Credential", $credparams.Credential)
-			$null = $allparams.Add("ServerCertificate", $servercertparams.ServerCertificate)
-			$null = $allparams.Add("ServerAsymmetricKey", $serverasymkeyparams.ServerAsymmetricKey)
-			return $allparams
-		}
-	}
+			# Auto populates:
+			#[string]$InstallDatabase,
+			#[string]$Credential,
+			#[string]$ServerCertificate,
+			#[string]$ServerAsymmetricKey,
+			return (Get-ParamMaintenanceSolution -SqlServer $sqlserver -SqlCredential $SqlCredential) } }
+	
 	
 	BEGIN
 	{
 		
 		$sourceserver = Connect-SqlServer -SqlServer $sqlserver -SqlCredential $SqlCredential -RegularUser
 		$source = $sourceserver.DomainInstanceName
+		$InstallDatabase = $psboundparameters.InstallDatabase
 		
 		# Parameter switching and cleaning
 		
@@ -245,9 +241,6 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 			Unblock-File $sqlfile -ErrorAction SilentlyContinue
 		}
 		
-		# Used a dynamic parameter? Convert from RuntimeDefinedParameter object to regular array
-		$InstallDatabase = $psboundparameters.Database
-		
 		if ($Header -like '*update*')
 		{
 			$action = "update"
@@ -281,11 +274,6 @@ Pops up a dialog box asking which database on sqlserver2014a you want to install
 			if ($InstallDatabase.length -eq 0)
 			{
 				throw "You must select a database to $action the procedure"
-			}
-			
-			if ($InstallDatabase -ne 'master')
-			{
-				Write-Warning "You have selected a database other than master. When you run Show-SqlWhoIsActive in the future, you must specify -Database $InstallDatabase"
 			}
 		}
 		
